@@ -9,6 +9,23 @@ function requiredParam(query, key) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function unauthorized(res) {
+  res.status(401).json({
+    error: "Unauthorized. Provide valid token via query `token` or header `x-api-key`."
+  });
+}
+
+function verifyToken(req, res) {
+  const expectedToken = process.env.API_TOKEN;
+  if (!expectedToken) return true;
+  const tokenFromQuery = requiredParam(req.query, "token");
+  const tokenFromHeader =
+    typeof req.headers["x-api-key"] === "string" ? req.headers["x-api-key"].trim() : "";
+  if (tokenFromQuery === expectedToken || tokenFromHeader === expectedToken) return true;
+  unauthorized(res);
+  return false;
+}
+
 function encodeVlessUri({
   host,
   port,
@@ -133,6 +150,8 @@ function buildV2BoxConfig({
 }
 
 export default function handler(req, res) {
+  if (!verifyToken(req, res)) return;
+
   const host = requiredParam(req.query, "host");
   const uuid = requiredParam(req.query, "uuid");
   const pbk = requiredParam(req.query, "pbk");
@@ -174,8 +193,17 @@ export default function handler(req, res) {
     remark
   });
 
-  res.status(200).json({
-    vlessUri,
-    config
-  });
+  const format = requiredParam(req.query, "format");
+  if (format === "uri") {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.status(200).send(vlessUri);
+    return;
+  }
+
+  if (format === "json") {
+    res.status(200).json(config);
+    return;
+  }
+
+  res.status(200).json({ vlessUri, config });
 }

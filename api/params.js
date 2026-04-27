@@ -11,9 +11,11 @@ export default function handler(req, res) {
       fp: "uTLS fingerprint (default: chrome)",
       sid: "Reality short id",
       spx: "Reality spider x path (default: /)",
-      remark: "Profile name for client"
+      remark: "Profile name for client",
+      token: "Required if API_TOKEN env variable is enabled",
+      format: "Only for /api/v2box: uri | json | (empty = both)"
     },
     example:
-      "/api/v2box?host=vpn.example.com&uuid=11111111-2222-3333-4444-555555555555&pbk=YOUR_PUBLIC_KEY&sid=abcd&sni=vpn.example.com&fp=chrome&spx=%2F&remark=my-vpn"
+      "/api/v2box?host=vpn.example.com&uuid=11111111-2222-3333-4444-555555555555&pbk=YOUR_PUBLIC_KEY&sid=abcd&sni=vpn.example.com&fp=chrome&spx=%2F&remark=my-vpn&format=uri"
   });
 }

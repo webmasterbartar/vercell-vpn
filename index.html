@@ -71,6 +71,7 @@
         display: flex;
         gap: 8px;
         margin-top: 12px;
+        flex-wrap: wrap;
       }
       pre {
         background: #020617;
@@ -98,7 +99,21 @@
     <div class="wrap">
       <div class="card">
         <h1>V2Box Config Builder</h1>
-        <p>مقادیر VLESS + Reality رو وارد کن، لینک آماده و تست خروجی بگیر.</p>
+        <p>اگر فقط می‌خوای سریع روی گوشی تست کنی، از Quick Link پایین استفاده کن.</p>
+      </div>
+
+      <div class="card">
+        <strong>Quick Link (بدون پر کردن فرم)</strong>
+        <p>این لینک از `/api/quick` استفاده می‌کند و فقط با envهای سرور کار می‌کند.</p>
+        <pre id="quickUrl"></pre>
+        <div class="actions">
+          <button id="copyQuickBtn">کپی Quick Link</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong>حالت دستی (اختیاری)</strong>
+        <p>اگر خواستی تنظیمات متفاوت بسازی، فیلدها را پر کن.</p>
         <div class="grid">
           <div>
             <label for="host">host *</label>
@@ -136,18 +151,28 @@
             <label for="remark">remark</label>
             <input id="remark" value="my-vpn" />
           </div>
+          <div class="full">
+            <label for="token">token (اختیاری - اگر API_TOKEN ست شده)</label>
+            <input id="token" placeholder="your-secret-token" />
+          </div>
         </div>
         <div class="actions">
           <button id="buildBtn">ساخت لینک</button>
           <button id="testBtn" class="secondary">تست API</button>
           <button id="copyBtn" class="secondary">کپی vlessUri</button>
+          <button id="copySubBtn" class="secondary">کپی لینک اشتراک</button>
         </div>
       </div>
 
       <div class="card">
-        <strong>API URL</strong>
+        <strong>API URL (JSON)</strong>
         <pre id="apiUrl"></pre>
         <span id="status"></span>
+      </div>
+
+      <div class="card">
+        <strong>Subscription URL (text/plain)</strong>
+        <pre id="subUrl"></pre>
       </div>
 
       <div class="card">
@@ -162,8 +187,10 @@
     </div>
 
     <script>
-      const fields = ["host", "port", "uuid", "pbk", "sid", "sni", "fp", "spx", "remark"];
+      const fields = ["host", "port", "uuid", "pbk", "sid", "sni", "fp", "spx", "remark", "token"];
       const apiUrlEl = document.getElementById("apiUrl");
+      const subUrlEl = document.getElementById("subUrl");
+      const quickUrlEl = document.getElementById("quickUrl");
       const jsonOutEl = document.getElementById("jsonOut");
       const vlessEl = document.getElementById("vlessUri");
       const statusEl = document.getElementById("status");
@@ -181,6 +208,22 @@
         return `${window.location.origin}/api/v2box?${params.toString()}`;
       }
 
+      function buildSubUrl() {
+        const params = new URLSearchParams();
+        fields.forEach((f) => {
+          const v = getValue(f);
+          if (v) params.set(f, v);
+        });
+        return `${window.location.origin}/api/sub?${params.toString()}`;
+      }
+
+      function buildQuickUrl() {
+        const token = getValue("token");
+        if (!token) return `${window.location.origin}/api/quick`;
+        const params = new URLSearchParams({ token });
+        return `${window.location.origin}/api/quick?${params.toString()}`;
+      }
+
       function resetStatus() {
         statusEl.className = "";
         statusEl.textContent = "";
@@ -188,14 +231,17 @@
 
       document.getElementById("buildBtn").addEventListener("click", () => {
         resetStatus();
-        const url = buildUrl();
-        apiUrlEl.textContent = url;
+        apiUrlEl.textContent = buildUrl();
+        subUrlEl.textContent = buildSubUrl();
+        quickUrlEl.textContent = buildQuickUrl();
       });
 
       document.getElementById("testBtn").addEventListener("click", async () => {
         resetStatus();
         const url = buildUrl();
         apiUrlEl.textContent = url;
+        subUrlEl.textContent = buildSubUrl();
+        quickUrlEl.textContent = buildQuickUrl();
         try {
           const res = await fetch(url);
           const data = await res.json();
@@ -226,7 +272,29 @@
         statusEl.textContent = "vlessUri کپی شد.";
       });
 
+      document.getElementById("copySubBtn").addEventListener("click", async () => {
+        const text = subUrlEl.textContent.trim();
+        if (!text) {
+          statusEl.className = "err";
+          statusEl.textContent = "اول روی ساخت لینک بزن تا subscription ساخته بشه.";
+          return;
+        }
+        await navigator.clipboard.writeText(text);
+        statusEl.className = "ok";
+        statusEl.textContent = "Subscription URL کپی شد.";
+      });
+
+      document.getElementById("copyQuickBtn").addEventListener("click", async () => {
+        const text = quickUrlEl.textContent.trim();
+        if (!text) return;
+        await navigator.clipboard.writeText(text);
+        statusEl.className = "ok";
+        statusEl.textContent = "Quick Link کپی شد.";
+      });
+
       apiUrlEl.textContent = `${window.location.origin}/api/v2box?...`;
+      subUrlEl.textContent = `${window.location.origin}/api/sub?...`;
+      quickUrlEl.textContent = buildQuickUrl();
       jsonOutEl.textContent = "{ }";
       vlessEl.textContent = "";
     </script>
