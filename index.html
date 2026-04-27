@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="fa">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>V2Box Config Builder</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background: #0b1220;
+        color: #e5e7eb;
+      }
+      .wrap {
+        max-width: 820px;
+        margin: 24px auto;
+        padding: 0 16px;
+      }
+      .card {
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0 0 12px;
+        color: #9ca3af;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      label {
+        font-size: 13px;
+        color: #cbd5e1;
+        display: block;
+        margin-bottom: 4px;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #334155;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      .full {
+        grid-column: 1 / -1;
+      }
+      button {
+        background: #22c55e;
+        border: 0;
+        color: #04130a;
+        padding: 10px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .secondary {
+        background: #334155;
+        color: #e2e8f0;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      pre {
+        background: #020617;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 12px;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .ok {
+        color: #86efac;
+      }
+      .err {
+        color: #fca5a5;
+      }
+      @media (max-width: 700px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>V2Box Config Builder</h1>
+        <p>مقادیر VLESS + Reality رو وارد کن، لینک آماده و تست خروجی بگیر.</p>
+        <div class="grid">
+          <div>
+            <label for="host">host *</label>
+            <input id="host" placeholder="vpn.example.com" />
+          </div>
+          <div>
+            <label for="port">port</label>
+            <input id="port" value="443" />
+          </div>
+          <div>
+            <label for="uuid">uuid *</label>
+            <input id="uuid" placeholder="11111111-2222-3333-4444-555555555555" />
+          </div>
+          <div>
+            <label for="pbk">pbk (Reality public key) *</label>
+            <input id="pbk" placeholder="YourRealityPublicKey" />
+          </div>
+          <div>
+            <label for="sid">sid</label>
+            <input id="sid" placeholder="abcd" />
+          </div>
+          <div>
+            <label for="sni">sni</label>
+            <input id="sni" placeholder="vpn.example.com" />
+          </div>
+          <div>
+            <label for="fp">fp</label>
+            <input id="fp" value="chrome" />
+          </div>
+          <div>
+            <label for="spx">spx</label>
+            <input id="spx" value="/" />
+          </div>
+          <div class="full">
+            <label for="remark">remark</label>
+            <input id="remark" value="my-vpn" />
+          </div>
+        </div>
+        <div class="actions">
+          <button id="buildBtn">ساخت لینک</button>
+          <button id="testBtn" class="secondary">تست API</button>
+          <button id="copyBtn" class="secondary">کپی vlessUri</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong>API URL</strong>
+        <pre id="apiUrl"></pre>
+        <span id="status"></span>
+      </div>
+
+      <div class="card">
+        <strong>vlessUri</strong>
+        <pre id="vlessUri"></pre>
+      </div>
+
+      <div class="card">
+        <strong>config JSON</strong>
+        <pre id="jsonOut"></pre>
+      </div>
+    </div>
+
+    <script>
+      const fields = ["host", "port", "uuid", "pbk", "sid", "sni", "fp", "spx", "remark"];
+      const apiUrlEl = document.getElementById("apiUrl");
+      const jsonOutEl = document.getElementById("jsonOut");
+      const vlessEl = document.getElementById("vlessUri");
+      const statusEl = document.getElementById("status");
+
+      function getValue(id) {
+        return document.getElementById(id).value.trim();
+      }
+
+      function buildUrl() {
+        const params = new URLSearchParams();
+        fields.forEach((f) => {
+          const v = getValue(f);
+          if (v) params.set(f, v);
+        });
+        return `${window.location.origin}/api/v2box?${params.toString()}`;
+      }
+
+      function resetStatus() {
+        statusEl.className = "";
+        statusEl.textContent = "";
+      }
+
+      document.getElementById("buildBtn").addEventListener("click", () => {
+        resetStatus();
+        const url = buildUrl();
+        apiUrlEl.textContent = url;
+      });
+
+      document.getElementById("testBtn").addEventListener("click", async () => {
+        resetStatus();
+        const url = buildUrl();
+        apiUrlEl.textContent = url;
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+          if (!res.ok) {
+            statusEl.className = "err";
+            statusEl.textContent = `Error: ${data.error || "request failed"}`;
+            return;
+          }
+          statusEl.className = "ok";
+          statusEl.textContent = "OK: config generated";
+          vlessEl.textContent = data.vlessUri || "";
+          jsonOutEl.textContent = JSON.stringify(data.config || data, null, 2);
+        } catch (e) {
+          statusEl.className = "err";
+          statusEl.textContent = `Error: ${e.message}`;
+        }
+      });
+
+      document.getElementById("copyBtn").addEventListener("click", async () => {
+        const text = vlessEl.textContent.trim();
+        if (!text) {
+          statusEl.className = "err";
+          statusEl.textContent = "اول Test API رو بزن تا vlessUri ساخته بشه.";
+          return;
+        }
+        await navigator.clipboard.writeText(text);
+        statusEl.className = "ok";
+        statusEl.textContent = "vlessUri کپی شد.";
+      });
+
+      apiUrlEl.textContent = `${window.location.origin}/api/v2box?...`;
+      jsonOutEl.textContent = "{ }";
+      vlessEl.textContent = "";
+    </script>
+  </body>
+  </html>

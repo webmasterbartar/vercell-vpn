@@ -10,8 +10,10 @@ vercel dev
 ```
 
 بعد از اجرا:
+- `http://localhost:3000/` (فرم ساده ساخت و تست کانفیگ)
 - `http://localhost:3000/api/health`
 - `http://localhost:3000/api`
+- `http://localhost:3000/api/params`
 
 ## 2) دیپلوی روی Vercel
 
@@ -21,6 +23,9 @@ vercel
 
 در پایان یک دامنه بهت می‌دهد مثل:
 `https://your-project.vercel.app`
+
+بعد از دیپلوی هم می‌تونی با فرم آماده کار کنی:
+- `https://your-project.vercel.app/`
 
 ## 3) ساخت کانفیگ v2box
 
