@@ -1,0 +1,10 @@
+{
+  "name": "vercell-vpn",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vercel-hosted config generator for v2box clients",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  }
+}
